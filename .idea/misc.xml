@@ -4,9 +4,13 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Users/Professional/IntelliJIDEAProjects/LaserMap/app/src/main/res/layout/activity_main_screen.xml" value="0.31354166666666666" />
+        <entry key="..\:/Users/Professional/IntelliJIDEAProjects/LaserMap/app/src/main/res/layout/activity_maps.xml" value="0.32760416666666664" />
       </map>
     </option>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="ProjectRootManager" version="2" languageLevel="JDK_16_PREVIEW" project-jdk-name="corretto-16" project-jdk-type="JavaSDK" />
+  <component name="ProjectType">
+    <option name="id" value="jpab" />
+  </component>
 </project>
