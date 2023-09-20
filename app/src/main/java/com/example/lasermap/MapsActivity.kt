@@ -5,9 +5,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Looper
+import android.os.*
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -21,9 +19,12 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import java.io.*
+import java.net.URL
+import kotlin.concurrent.thread
 
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
+class MapsActivity: AppCompatActivity(), OnMapReadyCallback {
 
     // Useful constants
     companion object {
@@ -78,15 +79,36 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.addMarker(MarkerOptions().position(skoltech).title("Marker in Skoltech"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(skoltech))
 
+        // Check if we can access user's location
         checkLocationPermission()
 
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("http://maps.google.com/maps?saddr=$skoltech.latitude,$skoltech.longitude&daddr=$redSquare.latitude,$redSquare.longitude")
-        )
-        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity")
-        startActivity(intent)
+        val parameters = "origin=${skoltech.latitude},${skoltech.longitude}&"+
+                         "destination=${redSquare.latitude},${redSquare.longitude}&"+
+                         "mode=bicycling&key=${R.string.google_maps_key}"
+        thread(start = true) {
+            download("https://maps.googleapis.com/maps/api/directions/json?${parameters}",
+                applicationContext.getFilesDir())
+        }
     }
+
+//    fun downloadFile(link: String, outputFileName: String) {
+//        URL(link).openStream().use {
+//            Channels.newChannel(it).use { rbc ->
+//                FileOutputStream(outputFileName).use { fos ->
+//                    fos.channel.transferFrom(rbc, 0, Long.MAX_VALUE)
+//                }
+//            }
+//        }
+//    }
+
+    fun download(link: String, path: File) {
+        URL(link).openStream().use { input ->
+            FileOutputStream(File(path, "/directions.json")).use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
+
 
     private var locationCallback: LocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
@@ -268,8 +290,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun startLocationUpdates() {
+
         fusedLocationClient.requestLocationUpdates(locationRequest,
             locationCallback,
             Looper.getMainLooper())
     }
 }
+
+

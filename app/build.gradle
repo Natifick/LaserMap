@@ -4,12 +4,13 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 30
 
     defaultConfig {
         applicationId "com.example.lasermap"
         minSdk 26
-        targetSdk 34
+        //noinspection ExpiredTargetSdkVersion
+        targetSdk 30
         versionCode 1
         versionName "1.0"
 
