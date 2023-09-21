@@ -1,33 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.example.lasermap">
-
-
-    <!--    Koffivi: Bluetooth Permissions Start-->
-
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <!-- Koffivi: Bluetooth Permissions Start -->
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
 
     <permission
-        android:name="com.example.lasermap.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-        android:protectionLevel="signature" />
+            android:name="com.example.lasermap.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+            android:protectionLevel="signature"/>
 
-    <uses-permission android:name="com.example.lasermap.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-
-    <!--    Koffivi: Bluetooth Permissions End -->
-
-
-
+    <uses-permission
+            android:name="com.example.lasermap.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"/> <!-- Koffivi: Bluetooth Permissions End -->
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
          Google Maps Android API v2, but you must specify either coarse or fine
          location permissions for the "MyLocation" functionality.
     -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
 
     <application
             android:allowBackup="true"
@@ -36,6 +29,9 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/Theme.LaserMap">
+        <activity
+                android:name=".BluetoothActivity"
+                android:exported="false"/>
         <activity
                 android:name=".MainScreenActivity"
                 android:exported="true">
@@ -56,6 +52,7 @@
         <meta-data
                 android:name="com.google.android.geo.API_KEY"
                 android:value="@string/google_maps_key"/>
+
         <activity
                 android:name=".MapsActivity"
                 android:exported="true"
@@ -69,5 +66,3 @@
     </application>
 
 </manifest>
-
-

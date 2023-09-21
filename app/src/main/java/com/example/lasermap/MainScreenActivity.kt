@@ -14,4 +14,8 @@ class MainScreenActivity : AppCompatActivity() {
     fun onMapOpenerClick(view: View?) {
         startActivity(Intent(this, MapsActivity::class.java))
     }
+
+    fun onBlutOpenerClick(view: View?) {
+        startActivity(Intent(this, BluetoothActivity::class.java))
+    }
 }

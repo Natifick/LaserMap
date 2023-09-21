@@ -2,6 +2,10 @@ package com.example.lasermap
 
 import android.Manifest
 import android.app.AlertDialog
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -9,10 +13,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import com.example.lasermap.databinding.ActivityMapsBinding
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -21,14 +27,20 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import java.io.IOException
+import java.io.OutputStream
+import java.util.*
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // Useful constants
     companion object {
+        private const val TAG = "LaserMaps"
         private const val MY_PERMISSIONS_REQUEST_LOCATION = 99
         private const val MY_PERMISSIONS_REQUEST_BACKGROUND_LOCATION = 66
+        private const val MY_PERMISSIONS_REQUEST_BLUETOOTH = 77
+        private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     }
 
     private lateinit var mMap: GoogleMap
@@ -37,6 +49,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private val requestingLocationUpdates: Boolean = true
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+    private lateinit var outputStream: OutputStream
+    private lateinit var bluetoothSocket: BluetoothSocket
+
     // For location permission
     private val locationRequest: LocationRequest = LocationRequest.create().apply {
         interval = 30
@@ -44,6 +59,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
         maxWaitTime = 60
     }
+
+    private var BTValue = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +74,101 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        checkBluetoothPermission()
+
+        // hardcode the needed device
+        val macAddress = "98:DA:60:04:6B:12"
+        val bluetoothManager = applicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val pairedDevices: Set<BluetoothDevice> = bluetoothManager.adapter.getBondedDevices()
+        val bluetoothDevice = bluetoothManager.adapter.getRemoteDevice(macAddress);
+
+        Thread(Runnable {
+            checkBluetoothPermission()
+            try {
+                bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid)
+                bluetoothManager.adapter.cancelDiscovery()
+                bluetoothSocket.connect()
+                outputStream = bluetoothSocket.getOutputStream()
+                Log.e("Message", "Connected to HC-06")
+                runOnUiThread {
+                    Toast.makeText(this@MapsActivity, "Bluetooth successfully connected", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: IOException) {
+                Log.e("Message", "Turn on bluetooth and restart the app")
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MapsActivity,
+                        "Turn on bluetooth and restart the app",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                throw RuntimeException(e)
+            }
+        }).start()
+
         mapFragment.getMapAsync(this)
+    }
+
+    private fun checkBluetoothPermission() {
+        if ((ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED) ||
+            (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_SCAN
+            ) != PackageManager.PERMISSION_GRANTED)
+        ) {
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) ||
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.BLUETOOTH_SCAN
+                )
+            ) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                AlertDialog.Builder(this)
+                    .setTitle("Location Permission Needed")
+                    .setMessage("This app needs the Location permission, please accept to use location functionality")
+                    .setPositiveButton(
+                        "OK"
+                    ) { _, _ ->
+                        //Prompt the user once explanation has been shown
+                        requestBluetoothConnection()
+                    }
+                    .create()
+                    .show()
+            } else {
+                // No explanation needed, we can request the permission.
+                requestBluetoothConnection()
+            }
+        }
+    }
+
+    private fun requestBluetoothConnection() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
+            ),
+            MY_PERMISSIONS_REQUEST_BLUETOOTH
+        )
+    }
+
+    private fun sendCommand(value: Int) {
+        try {
+            var tmp = "${value}\n" // I have to make a string, or it will not work
+            outputStream.write(tmp.toByteArray())
+            Log.d("Command -> ", value.toString())
+        } catch (e: IOException) {
+            throw java.lang.RuntimeException(e)
+        }
     }
 
     /**
@@ -79,17 +190,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.moveCamera(CameraUpdateFactory.newLatLng(skoltech))
 
         checkLocationPermission()
-
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("http://maps.google.com/maps?saddr=$skoltech.latitude,$skoltech.longitude&daddr=$redSquare.latitude,$redSquare.longitude")
-        )
-        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity")
-        startActivity(intent)
     }
 
     private var locationCallback: LocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
+            if (::outputStream.isInitialized)  {
+                BTValue = if (BTValue == 3) {
+                    4
+                } else {
+                    3
+                }
+                sendCommand(BTValue)
+            }
             val locationList = locationResult.locations
             if (locationList.isNotEmpty()) {
                 //The last location in the list is the newest
@@ -149,6 +261,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+
     private fun requestLocationPermission() {
         ActivityCompat.requestPermissions(
             this,
@@ -183,6 +296,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         grantResults: IntArray
     ) {
         when (requestCode) {
+            MY_PERMISSIONS_REQUEST_BLUETOOTH -> {
+
+            }
             MY_PERMISSIONS_REQUEST_LOCATION -> {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -268,8 +384,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun startLocationUpdates() {
+        checkLocationPermission()
         fusedLocationClient.requestLocationUpdates(locationRequest,
             locationCallback,
             Looper.getMainLooper())
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (bluetoothSocket != null) {
+            try {
+                bluetoothSocket.close()
+                Log.d(TAG, "Connection closed")
+            } catch (e: IOException) {
+                Log.d(TAG, "Error while closing the connection")
+            }
+        }
     }
 }
