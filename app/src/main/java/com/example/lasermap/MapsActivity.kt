@@ -26,10 +26,12 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PolylineOptions
 import java.io.IOException
 import java.io.OutputStream
 import java.util.*
 import kotlin.math.pow
+import kotlin.math.round
 import kotlin.math.sqrt
 
 
@@ -193,6 +195,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val redSquare = LatLng(55.754491, 37.619303)
         val skoltech = LatLng(55.698598, 37.359529)
         mMap.addMarker(MarkerOptions().position(skoltech).title("Marker in Skoltech"))
+        mMap.moveCamera(CameraUpdateFactory.zoomTo(19f))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(skoltech))
         mMap.setOnMapClickListener {
             if (appendTime) {
@@ -205,13 +208,34 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 if (coordList.size >= 5) {
                     appendTime = false
+                    BTValue = calcAngle(it.latitude, it.longitude,
+                                        coordList[0].latitude, coordList[0].longitude)
+                    val polyline1 = googleMap.addPolyline(PolylineOptions()
+                        .clickable(true)
+                        .addAll(coordList))
+                    polyline1.isVisible = true
                 }
             }
             else {
-                if (distance(it, coordList[0]) < 10) {
+                Log.i(TAG, distance(it.latitude, it.longitude, coordList[0]).toString())
+                if (distance(it.latitude, it.longitude, coordList[0]) < 5) {
                     coordList.removeAt(0)
                     Toast.makeText(this@MapsActivity,
-                        "angle: ",
+                        "angle: ${BTValue}",
+                        Toast.LENGTH_LONG).show()
+
+                    if (coordList.size > 0) {
+                        BTValue = calcAngle(it.latitude, it.longitude,
+                                            coordList[0].latitude, coordList[0].longitude)
+                    }
+                    else {
+                        appendTime = true
+                    }
+                }
+                else {
+                    Toast.makeText(this@MapsActivity,
+                        "angle: ${calcAngle(it.latitude, it.longitude,
+                            coordList[0].latitude, coordList[0].longitude)}",
                         Toast.LENGTH_LONG).show()
                 }
             }
@@ -219,10 +243,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         checkLocationPermission()
     }
 
-    fun distance(point1: LatLng, point2: LatLng): Double {
-        return sqrt(((point1.latitude - point2.latitude) * 1000).pow(2.0) +
-                       ((point1.longitude - point2.longitude) * 1000).pow(2.0)
+    fun distance(point1x: Double, point1y: Double, point2: LatLng): Double {
+        return sqrt(((point1x - point2.latitude) * 10000).pow(2.0) +
+                       ((point1y - point2.longitude) * 10000).pow(2.0)
         )
+    }
+
+    fun calcAngle(point1x: Double, point1y: Double, point2x: Double, point2y: Double): Int {
+        // It keeps the direction too the north
+        var theta = Math.atan2(point2y - point1y, point2x - point1x)
+        theta += Math.PI
+        var angle = Math.toDegrees(theta)
+        if (angle < 0) {
+            angle += 360
+        }
+        return round(angle).toInt()
     }
 
     private var locationCallback: LocationCallback = object : LocationCallback() {
@@ -236,16 +271,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 //                    "Got Location: " + location.toString(),
 //                    Toast.LENGTH_LONG
 //                ).show()
-//                if (distance(location, pathPoints[0]) < 10) {
+//                Log.i(TAG, distance(location.latitude, location.longitude, coordList[0]).toString())
+//                if (distance(location.latitude, location.longitude, coordList[0]) < 5) {
+//                    coordList.removeAt(0)
+//                    Toast.makeText(this@MapsActivity,
+//                        "angle: ",
+//                        Toast.LENGTH_LONG).show()
 //
 //                }
             }
             if (::outputStream.isInitialized)  {
-                BTValue = if (BTValue == 3) {
-                    4
-                } else {
-                    3
-                }
                 sendCommand(BTValue)
             }
         }

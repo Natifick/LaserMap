@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.example.lasermap">
+>
     <!-- Koffivi: Bluetooth Permissions Start -->
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
@@ -31,7 +31,7 @@
             android:theme="@style/Theme.LaserMap">
         <activity
                 android:name=".BluetoothActivity"
-                android:exported="false"/>
+                android:exported="true"/>
         <activity
                 android:name=".MainScreenActivity"
                 android:exported="true">
