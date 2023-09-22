@@ -18,7 +18,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import com.example.lasermap.databinding.ActivityMapsBinding
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -30,6 +29,8 @@ import com.google.android.gms.maps.model.MarkerOptions
 import java.io.IOException
 import java.io.OutputStream
 import java.util.*
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -42,6 +43,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         private const val MY_PERMISSIONS_REQUEST_BLUETOOTH = 77
         private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     }
+
+    private lateinit var coordList: MutableList<LatLng>
+
+    // TODO just for debug
+    var appendTime = true
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
@@ -77,39 +83,39 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         checkBluetoothPermission()
 
         // hardcode the needed device
-        val macAddress = "98:DA:60:04:6B:12"
-        val bluetoothManager = applicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val pairedDevices: Set<BluetoothDevice> = bluetoothManager.adapter.getBondedDevices()
-        val bluetoothDevice = bluetoothManager.adapter.getRemoteDevice(macAddress);
+//        val macAddress = "98:DA:60:04:6B:12"
+//        val bluetoothManager = applicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+//        val pairedDevices: Set<BluetoothDevice> = bluetoothManager.adapter.getBondedDevices()
+//        val bluetoothDevice = bluetoothManager.adapter.getRemoteDevice(macAddress);
 
-        Thread(Runnable {
-            checkBluetoothPermission()
-            try {
-                bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid)
-                bluetoothManager.adapter.cancelDiscovery()
-                bluetoothSocket.connect()
-                outputStream = bluetoothSocket.getOutputStream()
-                Log.e("Message", "Connected to HC-06")
-                runOnUiThread {
-                    Toast.makeText(this@MapsActivity, "Bluetooth successfully connected", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: IOException) {
-                Log.e("Message", "Turn on bluetooth and restart the app")
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MapsActivity,
-                        "Turn on bluetooth and restart the app",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                throw RuntimeException(e)
-            }
-        }).start()
+//        Thread {
+//            checkBluetoothPermission()
+//            try {
+//                bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid)
+//                bluetoothManager.adapter.cancelDiscovery()
+//                bluetoothSocket.connect()
+//                outputStream = bluetoothSocket.getOutputStream()
+//                Log.e("Message", "Connected to HC-06")
+//                runOnUiThread {
+//                    Toast.makeText(this@MapsActivity, "Bluetooth successfully connected", Toast.LENGTH_LONG).show()
+//                }
+//            } catch (e: IOException) {
+//                Log.e("Message", "Turn on bluetooth and restart the app")
+//                runOnUiThread {
+//                    Toast.makeText(
+//                        this@MapsActivity,
+//                        "Turn on bluetooth and restart the app",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+//                }
+//                throw RuntimeException(e)
+//            }
+//        }.start()
 
         mapFragment.getMapAsync(this)
     }
 
-    private fun checkBluetoothPermission() {
+    fun checkBluetoothPermission() {
         if ((ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.BLUETOOTH_CONNECT
@@ -188,12 +194,52 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val skoltech = LatLng(55.698598, 37.359529)
         mMap.addMarker(MarkerOptions().position(skoltech).title("Marker in Skoltech"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(skoltech))
+        mMap.setOnMapClickListener {
+            if (appendTime) {
+                if (::coordList.isInitialized) {
+                    coordList += it
+                }
+                else {
+                    coordList = mutableListOf(it)
+                }
 
+                if (coordList.size >= 5) {
+                    appendTime = false
+                }
+            }
+            else {
+                if (distance(it, coordList[0]) < 10) {
+                    coordList.removeAt(0)
+                    Toast.makeText(this@MapsActivity,
+                        "angle: ",
+                        Toast.LENGTH_LONG).show()
+                }
+            }
+        }
         checkLocationPermission()
+    }
+
+    fun distance(point1: LatLng, point2: LatLng): Double {
+        return sqrt(((point1.latitude - point2.latitude) * 1000).pow(2.0) +
+                       ((point1.longitude - point2.longitude) * 1000).pow(2.0)
+        )
     }
 
     private var locationCallback: LocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
+            val locationList = locationResult.locations
+            if (locationList.isNotEmpty()) {
+                //The last location in the list is the newest
+                val location = locationList.last()
+//                Toast.makeText(
+//                    this@MapsActivity,
+//                    "Got Location: " + location.toString(),
+//                    Toast.LENGTH_LONG
+//                ).show()
+//                if (distance(location, pathPoints[0]) < 10) {
+//
+//                }
+            }
             if (::outputStream.isInitialized)  {
                 BTValue = if (BTValue == 3) {
                     4
@@ -201,17 +247,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     3
                 }
                 sendCommand(BTValue)
-            }
-            val locationList = locationResult.locations
-            if (locationList.isNotEmpty()) {
-                //The last location in the list is the newest
-                val location = locationList.last()
-                Toast.makeText(
-                    this@MapsActivity,
-                    "Got Location: " + location.toString(),
-                    Toast.LENGTH_LONG
-                )
-                    .show()
             }
         }
     }

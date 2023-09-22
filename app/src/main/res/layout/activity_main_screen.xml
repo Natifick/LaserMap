@@ -1,21 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/black"
         tools:context=".MainScreenActivity">
-
-    <TextView
-            android:text="Welcome to LaSearch"
-            android:layout_width="100dp"
-            android:layout_height="36dp" android:id="@+id/header" tools:layout_editor_absoluteY="74dp"
-            tools:layout_editor_absoluteX="155dp"/>
     <Button
-            android:text="GoToMap"
+            android:id="@+id/button"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/mapSummoner" tools:layout_editor_absoluteY="154dp"
-            tools:layout_editor_absoluteX="120dp"
-            android:onClick="onMapOpenerClick"/>
+            android:layout_height="wrap_content"
+            android:background="@drawable/search"
+            android:onClick="launchSearch"
+            android:text="Search"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+    <EditText
+            android:id="@+id/editText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:ems="10"
+            android:inputType="text"
+            android:text="@string/from"
+            android:textColor="@color/white"
+            app:layout_constraintBottom_toTopOf="@+id/editText2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"/>
+    <EditText
+            android:id="@+id/editText2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:ems="10"
+            android:inputType="text"
+            android:text="@string/to"
+            android:textColor="@color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"/>
+    <ImageView
+            android:id="@+id/imageView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/search"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
