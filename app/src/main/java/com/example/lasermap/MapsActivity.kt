@@ -33,6 +33,7 @@ import retrofit2.Callback
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 import java.io.File
 import kotlin.concurrent.thread
@@ -158,13 +159,12 @@ class MapsActivity: AppCompatActivity(), OnMapReadyCallback {
 
         // Check if we can access user's location
         checkLocationPermission()
-        val parameters = "origin=${skoltech.latitude},${skoltech.longitude}&"+
-                "destination=${redSquare.latitude},${redSquare.longitude}&"+
-                "mode=bicycling&key=${getResources().getString(R.string.google_maps_key)}"
-        Log.d("link", "https://maps.googleapis.com/maps/api/directions/json?${parameters}")
+        val parameters = "${skoltech.latitude},${skoltech.longitude};"+
+                "${redSquare.latitude},${redSquare.longitude}?"
+        Log.d("link", "https://router.project-osrm.org/route/v1/bike/${parameters}")
         thread(start = true) {
 
-            download("https://maps.googleapis.com/",
+            download("https://router.project-osrm.org/",
                 skoltech, redSquare,
                 applicationContext.filesDir)
         }
@@ -193,9 +193,9 @@ class MapsActivity: AppCompatActivity(), OnMapReadyCallback {
         val reqinterface = retrofitBuilder.create(Api::class.java)
 
         reqinterface.getJson(
-            "${fromPosition.latitude},${fromPosition.longitude}",
-            "${toPosition.latitude},${toPosition.longitude}",
-            getResources().getString(R.string.google_maps_key)
+            fromPosition.latitude, fromPosition.longitude,
+            toPosition.latitude, toPosition.longitude,
+            steps = true
         )?.enqueue(
             object: Callback<DirectionResults?> {
                 override fun onResponse(
@@ -254,11 +254,16 @@ class MapsActivity: AppCompatActivity(), OnMapReadyCallback {
     }
 
     interface Api {
-        @GET("/maps/api/directions/json")
+        @GET("/route/v1/bike/{from_lat},{from_long};{to_lat},{to_long}")
         fun getJson(
-            @Query("origin") origin: String?,
-            @Query("destination") destination: String?,
-            @Query("key") key: String?,
+            @Path("from_lat") from_lat: Double?,
+            @Path("from_long") from_long: Double?,
+            @Path("to_lat") to_lat: Double?,
+            @Path("to_long") to_long: Double?,
+            @Query("steps") steps: Boolean?,
+//            @Query("geometries") geometries: String?,
+//            @Query("overview") key: String?,
+//            @Query("continue_straight") straight: String?
         ): Call<DirectionResults?>?
     }
 
@@ -442,7 +447,7 @@ class MapsActivity: AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun startLocationUpdates() {
-
+        checkLocationPermission()
         fusedLocationClient.requestLocationUpdates(locationRequest,
             locationCallback,
             Looper.getMainLooper())
