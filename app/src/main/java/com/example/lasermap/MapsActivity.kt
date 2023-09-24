@@ -25,6 +25,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
 import java.io.IOException
@@ -50,6 +51,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // TODO just for debug
     var appendTime = true
+    lateinit var marker: Marker
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
@@ -194,7 +196,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         // Add a marker in Skoltech and move the camera
         val redSquare = LatLng(55.754491, 37.619303)
         val skoltech = LatLng(55.698598, 37.359529)
-        mMap.addMarker(MarkerOptions().position(skoltech).title("Marker in Skoltech"))
+        marker = mMap.addMarker(MarkerOptions().position(skoltech).title("Marker in Skoltech"))
         mMap.moveCamera(CameraUpdateFactory.zoomTo(19f))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(skoltech))
         mMap.setOnMapClickListener {
@@ -266,6 +268,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             if (locationList.isNotEmpty()) {
                 //The last location in the list is the newest
                 val location = locationList.last()
+                marker.position = LatLng(location.latitude, location.longitude)
 //                Toast.makeText(
 //                    this@MapsActivity,
 //                    "Got Location: " + location.toString(),
@@ -460,15 +463,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             Looper.getMainLooper())
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (bluetoothSocket != null) {
-            try {
-                bluetoothSocket.close()
-                Log.d(TAG, "Connection closed")
-            } catch (e: IOException) {
-                Log.d(TAG, "Error while closing the connection")
-            }
-        }
-    }
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        if (bluetoothSocket != null) {
+//            try {
+//                bluetoothSocket.close()
+//                Log.d(TAG, "Connection closed")
+//            } catch (e: IOException) {
+//                Log.d(TAG, "Error while closing the connection")
+//            }
+//        }
+//    }
 }
